@@ -1,0 +1,13 @@
+# OpenSpec specs / tooling (local design artifacts, not part of the shipped tool)
+openspec/
+.claude/
+
+# Runtime artifacts
+claude_warmup.log
+*.log
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*~
