@@ -1,0 +1,45 @@
+name: claude-warmup
+
+# Cloud fallback for the local cron/Task Scheduler warmup: keeps the Claude CLI
+# floating quota window warm even when your own machine is off or asleep.
+#
+# Auth: requires a Claude Code OAuth token (your Pro/Max subscription) stored as
+# the repo secret CLAUDE_CODE_OAUTH_TOKEN. Generate it locally with:
+#   claude setup-token
+# Do NOT use an ANTHROPIC_API_KEY here — that is a separate pay-per-token path
+# and would not warm your subscription quota window.
+
+on:
+  schedule:
+    # GitHub cron is UTC only. Every 2 hours -> aligns to even local hours too.
+    # Note: scheduled runs can be delayed or skipped under load, and are
+    # auto-disabled after 60 days of repo inactivity.
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}   # manual "Run workflow" button
+
+# If a previous run is still going, don't pile up.
+concurrency:
+  group: claude-warmup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install Claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Warmup call (minimal token)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -z "${CLAUDE_CODE_OAUTH_TOKEN}" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is not set. Run 'claude setup-token' locally and add it under Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          echo "Warmup at $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          claude -p "Reply with only the digit 1 and nothing else."

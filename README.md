@@ -139,6 +139,36 @@ powershell -ExecutionPolicy Bypass -File .\install\install-task.ps1 -Uninstall
 
 ---
 
+## Version 3 — GitHub Actions (cloud fallback)
+
+Runs the warmup from GitHub's servers on a schedule, so the quota window stays
+warm **even when your own machine is off or asleep** — the one gap that local
+cron can't cover. Useful as a complement to (not a replacement for) the local
+job. Workflow: [`.github/workflows/warmup.yml`](.github/workflows/warmup.yml).
+
+### Setup
+1. Generate a Claude Code OAuth token from your Pro/Max subscription, locally:
+   ```bash
+   claude setup-token
+   ```
+2. In the repo on GitHub: **Settings → Secrets and variables → Actions → New
+   repository secret**, name it `CLAUDE_CODE_OAUTH_TOKEN`, paste the token.
+3. The workflow then runs every 2 hours automatically, and you can trigger it
+   manually from the **Actions** tab (**Run workflow**).
+
+> **Use the OAuth token, not an API key.** `ANTHROPIC_API_KEY` is a separate
+> pay-per-token billing path and would *not* warm your subscription quota window.
+
+### Caveats
+- GitHub cron is **UTC only** and scheduled runs can be **delayed or skipped**
+  under load, so the cadence is approximate.
+- Scheduled workflows are **auto-disabled after 60 days** of repo inactivity
+  (re-enable from the Actions tab).
+- Stores a long-lived credential as a repo secret — keep the repo private if
+  that's a concern.
+
+---
+
 ## Known limitations
 
 - **Cadence at the day wrap:** the default 2h interval divides 24 evenly, so the
